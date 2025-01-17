@@ -1,12 +1,12 @@
 import turtle
 import random
-import time
 
 # Set the animation speed to the maximum
 turtle.speed(0)
 turtle.bgcolor("black")
 turtle.ht()
 turtle.tracer(1)
+
 
 class Sprite(turtle.Turtle):
     def __init__(self, spriteshape, color, startx, starty):
@@ -20,21 +20,36 @@ class Sprite(turtle.Turtle):
     def move(self):
         self.fd(self.speed)
         # Boundary detection
-        if self.xcor() > 290 or self.xcor() < -290:
-            self.setx(max(min(self.xcor(), 290), -290))
+        if self.xcor() > 290:
+            self.setx(290)
             self.rt(60)
-        if self.ycor() > 290 or self.ycor() < -290:
-            self.sety(max(min(self.ycor(), 290), -290))
+
+        if self.xcor() < -290:
+            self.setx(-290)
             self.rt(60)
-    
+
+        if self.ycor() > 290:
+            self.sety(290)
+            self.rt(60)
+
+        if self.ycor() < -290:
+            self.sety(-290)
+            self.rt(60)
+
     def is_collision(self, other):
-        return self.distance(other) < 20
+        if other is None:
+            return False
+        if (self.xcor() >= (other.xcor() - 20)) and \
+                (self.xcor() <= (other.xcor() + 20)) and \
+                (self.ycor() >= (other.ycor() - 20)) and \
+                (self.ycor() <= (other.ycor() + 20)):
+            return True
 
 
 class Player(Sprite):
     def __init__(self, spriteshape, color, startx, starty):
         Sprite.__init__(self, spriteshape, color, startx, starty)
-        self.speed = 4
+        self.speed = 8
         self.lives = 3
 
     def turn_left(self):
@@ -54,8 +69,34 @@ class Player(Sprite):
 class Enemy(Sprite):
     def __init__(self, spriteshape, color, startx, starty):
         Sprite.__init__(self, spriteshape, color, startx, starty)
-        self.speed = random.randint(2, 6)
+        self.speed = 10
         self.setheading(random.randint(0, 360))
+
+
+class Ally(Sprite):
+    def __init__(self, spriteshape, color, startx, starty):
+        Sprite.__init__(self, spriteshape, color, startx, starty)
+        self.speed = 12
+        self.setheading(random.randint(0, 360))
+
+    def move(self):
+        self.fd(self.speed)
+        # Boundary detection
+        if self.xcor() > 290:
+            self.setx(290)
+            self.lt(60)
+
+        if self.xcor() < -290:
+            self.setx(-290)
+            self.lt(60)
+
+        if self.ycor() > 290:
+            self.sety(290)
+            self.lt(60)
+
+        if self.ycor() < -290:
+            self.sety(-290)
+            self.lt(60)
 
 
 class Missile(Sprite):
@@ -110,6 +151,7 @@ game.draw_border()
 player = Player("triangle", "white", 0, 0)
 enemy = Enemy("circle", "red", -100, 0)
 missile = Missile("triangle", "yellow", 0, 0)
+ally = Ally("square", "blue", 0, 0)
 
 # Keyboard bindings
 turtle.onkey(player.turn_left, "Left")
@@ -125,6 +167,7 @@ while True:
     turtle.update()
     enemy.move()
     missile.move()
+    ally.move()
 
     # Check for collision with the player
     if player.is_collision(enemy):
@@ -139,4 +182,10 @@ while True:
     if missile.is_collision(enemy):
         x, y = random.randint(-250, 250), random.randint(-250, 250)
         enemy.goto(x, y)
+        missile.status = "ready"
+
+    # Check for a collision between the missile and the ally
+    if missile.is_collision(ally):
+        x, y = random.randint(-250, 250), random.randint(-250, 250)
+        ally.goto(x, y)
         missile.status = "ready"
