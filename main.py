@@ -1,5 +1,6 @@
 import os
 import random
+import time
 
 #Import Turtle module
 import turtle 
@@ -8,12 +9,16 @@ turtle.fd(0)
 turtle.speed(0)
 #change the background color
 turtle.bgcolor("black")
+#Change the window title
+turtle.title("SpaceWar")
+#Change the background image
+turtle.bgpic("starfield.gif")
 #Hide the default turtle
 turtle.ht()
 #This saves memory
 turtle.setundobuffer(1)
 #This speeds up th drawing
-turtle.tracer(1)
+turtle.tracer(0)
 
 
 class Sprite(turtle.Turtle):
@@ -59,7 +64,8 @@ class Sprite(turtle.Turtle):
 class Player(Sprite):
     def __init__(self, spriteshape, color, startx, starty):
         Sprite.__init__(self, spriteshape, color, startx, starty)
-        self.speed = 15
+        self.shapesize(stretch_wid=0.6, stretch_len=1.1, outline=None)
+        self.speed = 10
         self.lives = 3
 
     def turn_left(self):
@@ -86,7 +92,7 @@ class Enemy(Sprite):
 class Ally(Sprite):
     def __init__(self, spriteshape, color, startx, starty):
         Sprite.__init__(self, spriteshape, color, startx, starty)
-        self.speed = 8 
+        self.speed = 8
         self.setheading(random.randint(0, 360))
 
     def move(self):
@@ -115,7 +121,7 @@ class Ally(Sprite):
 class Missile(Sprite):
     def __init__(self, spriteshape, color, startx, starty):
         Sprite.__init__(self, spriteshape, color, startx, starty)
-        self.shapesize(stretch_wid = 0.3, stretch_len = 0.4, outline = None)
+        self.shapesize(stretch_wid = 0.2, stretch_len = 0.4, outline = None)
         self.speed = 20
         self.status = "ready"
         self.goto(-1000, 1000)
@@ -140,6 +146,27 @@ class Missile(Sprite):
             self.status = "ready"
 
 
+class Particle(Sprite):
+    def __init__(self, spriteshape, color, startx, starty):
+        Sprite.__init__(self, spriteshape, color, startx, starty)
+        self.shapesize(stretch_wid = 0.2, stretch_len = 0.4, outline = None)
+        self.goto(-1000, -1000)
+        self.frame = 0
+
+
+    def explode(self, startx, starty):
+        self.goto(startx, starty)
+        self.setheading(random.randint(0, 360))
+        self.frame = 1
+
+    def move(self):
+        if self.frame > 0:
+            self.fd(10)
+            self.frame += 1
+
+        if self.frame > 15:
+            self.frame = 0
+            self.goto(-1000, -1000)
 
 
 class Game():
@@ -185,9 +212,22 @@ game.show_status()
 
 #Create my sprites
 player = Player("triangle", "white", 0, 0)
-enemy = Enemy("circle", "red", -100, 0)
+#enemy = Enemy("circle", "red", -100, 0)
 missile = Missile("triangle", "yellow", 0, 0)
-ally = Ally("square", "blue", 0, 0)
+#ally = Ally("square", "blue", 100, 0)
+
+
+enemies = []
+for i in range(6):
+    enemies.append(Enemy("circle", "red", -100, 0))
+
+allies = []
+for i in range(6):
+    allies.append(Ally("square", "blue", 100, 0))
+
+particles =[]
+for i in range(20):
+    particles.append(Particle("circle", "orange", 0, 0))
 
 
 #Keyboard bindings
@@ -200,39 +240,53 @@ turtle.listen()
 
 #Main game loop
 while True:
+    turtle.update()
+    time.sleep(0.02)
     player.move()
-    enemy.move()
+    #enemy.move()
     missile.move()
-    ally.move()
+    #ally.move()
 
-    #Check for a collision
-    if player.is_collision(enemy):
-        x = random.randint(-250, 250)
-        y = random.randint(-250, 250)
-        enemy.goto(x, y)
-        game.score -= 100
-        game.show_status()
+    for enemy in enemies:
+        enemy.move()
 
-    #Check for a collision between missile and the enemy
-    if missile.is_collision(enemy):
-        x = random.randint(-250, 250)
-        y = random.randint(-250, 250)
-        enemy.goto(x, y)
-        missile.status = "ready"
-        #Increase the score
-        game.score += 100
-        game.show_status()
+        #Check for a collision
+        if player.is_collision(enemy):
+            x = random.randint(-250, 250)
+            y = random.randint(-250, 250)
+            enemy.goto(x, y)
+            game.score -= 100
+            game.show_status()
 
+        #Check for a collision between missile and the enemy
+        if missile.is_collision(enemy):
+            x = random.randint(-250, 250)
+            y = random.randint(-250, 250)
+            enemy.goto(x, y)
+            missile.status = "ready"
+            #Increase the score
+            game.score += 100
+            game.show_status()
+            #Do the explosion
+            for particle in particles:
+                particle.explode(missile.xcor(), missile.ycor())
+               
 
-    #Check for a collision between missile and the ally
-    if missile.is_collision(ally):
-        x = random.randint(-250, 250)
-        y = random.randint(-250, 250)
-        ally.goto(x, y)
-        missile.status = "ready"
-        #Increase the score
-        game.score -= 50
-        game.show_status()
+    for ally in allies:
+        ally.move()
+
+        #Check for a collision between missile and the ally
+        if missile.is_collision(ally):
+            x = random.randint(-250, 250)
+            y = random.randint(-250, 250)
+            ally.goto(x, y)
+            missile.status = "ready"
+            #Increase the score
+            game.score -= 50
+            game.show_status()
+
+    for particle in particles:
+        particle.move()
 
 
 input("Press enter to finish.")
